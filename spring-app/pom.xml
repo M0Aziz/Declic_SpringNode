@@ -10,13 +10,14 @@
     </parent>
     <groupId>com.example</groupId>
     <artifactId>Candidate</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
-    <name>Candidate</name>
-    <description>Candidate</description>
+    <version>1</version>
+    <name>spring-app</name>
+    <description>spring-app</description>
     <properties>
         <java.version>1.8</java.version>
         <spring-cloud.version>2021.0.8</spring-cloud.version>
         <spring.main.web-application-type>REACTIVE</spring.main.web-application-type>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
     </properties>
     <dependencies>
@@ -72,6 +73,15 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>3.0.0</version>
+                <configuration>
+                    <encoding>UTF-8</encoding>
+                </configuration>
             </plugin>
         </plugins>
     </build>

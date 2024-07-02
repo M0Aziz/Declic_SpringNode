@@ -5,7 +5,7 @@ FROM openjdk:8-jre-alpine
 WORKDIR /app
 
 # Copiez le package.json et package-lock.json pour installer les dépendances
-COPY target/spring-app.jar spring-app.jar
+COPY target/Candidate-1.jar spring-app.jar
 
 
 # Exposez le port sur lequel votre application fonctionne
