@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const connectDB = async () => {
   try {
-    await mongoose.connect('mongodb://172.17.0.2:27017/declic', {
+    await mongoose.connect('mongodb://172.18.0.2:27017/declic', {
       useNewUrlParser: true,
       useUnifiedTopology: true
     });
