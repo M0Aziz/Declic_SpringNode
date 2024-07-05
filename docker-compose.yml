@@ -15,7 +15,7 @@ services:
     ports:
       - "5000:5000"
     environment:
-      MONGO_URI: mongodb://mongodb:27017/declic
+      MONGO_URI: mongodb://172.17.0.3:27017/declic
     volumes:
       - ./node-app:/app
 
