@@ -5,8 +5,8 @@ FROM openjdk:8-jre-alpine
 WORKDIR /app
 
 # Copy the JAR file into the container from the 'jar' directory
-COPY jar/*.jar spring-app.jar
-#COPY target/Candidate-1.jar spring-app.jar
+#COPY jar/*.jar spring-app.jar
+COPY target/Candidate-1.jar spring-app.jar
 
 
 # Exposez le port sur lequel votre application fonctionne
