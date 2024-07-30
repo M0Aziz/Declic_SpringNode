@@ -3,13 +3,11 @@
 const User = require('../models/User');
 const jwt = require('jsonwebtoken')
 const verifyToken = async (req, res, next) => {
-      // Check if Authorization header is present
   if (!req.headers.authorization) {
     return res.status(401).json({ error: 'Authorization header missing' });
   }
 
-  // Extract the token from the Authorization header
-  const token = req.headers.authorization.split(' ')[1]; // Authorization: 'Bearer <token>'
+  const token = req.headers.authorization.split(' ')[1]; 
 
   if (!token) {
     return res.status(401).json({ error: 'Token non fourni' });
@@ -18,12 +16,10 @@ const verifyToken = async (req, res, next) => {
   
     try {
         const {_id} = await jwt.verify(token,process.env.SECRET)
-      // Vérifier si le token correspond à un utilisateur dans la base de données
-      const user = await User.findOne({ _id }).select('_id'); // Chercher l'utilisateur par le token
+      const user = await User.findOne({ _id }).select('_id'); 
       if (!user) {
         return res.status(401).json({ error: 'User not found' });
       }
-      // Si le token est valide, ajoutez l'utilisateur à la requête et passez au middleware suivant
       req.user = user;
       next();
     } catch (error) {

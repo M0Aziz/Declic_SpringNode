@@ -2,15 +2,12 @@ const express = require('express');
 const router = express.Router();
 const nodemailer = require('nodemailer');
 
-// Définir le schéma de données pour le formulaire de contact
 const ContactSchema = require('../models/Contact');
 
-// Route POST pour soumettre le formulaire de contact
 router.post('/', async (req, res) => {
   try {
     const { firstName, lastName, email, subject, message } = req.body;
 
-    // Créer une nouvelle entrée dans la base de données
     const newContact = new ContactSchema({
       firstName,
       lastName,
@@ -19,10 +16,8 @@ router.post('/', async (req, res) => {
       message
     });
 
-    // Sauvegarder le message dans la base de données
     await newContact.save();
 
-    // Configurer le service de messagerie
     let transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
@@ -77,7 +72,6 @@ router.post('/', async (req, res) => {
         </div>
       `
     };
-    // Envoyer le mail
     await transporter.sendMail(mailOptions);
 
     res.status(200).send('Message envoyé avec succès');

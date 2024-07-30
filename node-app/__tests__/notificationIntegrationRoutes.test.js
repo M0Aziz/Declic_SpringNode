@@ -31,7 +31,7 @@ afterAll(async () => {
 });
 
 beforeEach(async () => {
-  await Notification.deleteMany({});
+ // await Notification.deleteMany({});
  //await Notification.deleteMany({ recipient: token });
   await User.deleteMany({ email:'test@example.com' });
 });

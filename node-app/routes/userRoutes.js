@@ -75,7 +75,6 @@ router.post('/add-user', upload.single('profilePicture'),
       console.log(decodedToken);
 
 
-      // Créer un nouvel utilisateur
       user = new User({
         firstName,
         lastName,
@@ -85,7 +84,6 @@ router.post('/add-user', upload.single('profilePicture'),
         token // Mot de passe hashé
       });
 
-      // Enregistrer l'utilisateur dans la base de données
       await user.save();
 
       res.status(201).json(user);
@@ -118,7 +116,6 @@ router.post('/add-user', upload.single('profilePicture'), async (req, res) => {
 
   console.log('body',req.body);
   try {
-    // Récupérez les données du formulaire depuis req.body
    
 
     //console.log('file',req.file.path);
@@ -139,27 +136,21 @@ router.post('/add-user', upload.single('profilePicture'), async (req, res) => {
       return res.status(400).json({ message: 'L\'utilisateur existe déjà' });
     }
 
-    // Hash du mot de passe
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Génération d'un token JWT
    // const jwtSecret = crypto.randomBytes(32).toString('hex');
     //const token = jwt.sign({ email }, jwtSecret, { expiresIn: '3h' });
 
-    // Création d'un nouvel utilisateur
     user = new User({
       firstName,
       lastName,
       email,
       password: hashedPassword,
       profilePicture: profilePicture,
-      //token
     });
 
-    // Sauvegarde de l'utilisateur dans la base de données
     await user.save();
 
-    // Retourner la réponse avec l'utilisateur créé
     res.status(201).json(user);
   } catch (error) {
     console.error('Erreur lors de la création de l\'utilisateur :', error);
@@ -167,19 +158,15 @@ router.post('/add-user', upload.single('profilePicture'), async (req, res) => {
   }
 });
 
-// Route pour gérer la connexion avec Google
 router.post('/google-login', async (req, res) => {
 
   try {
-    // Vérifier l'ID Token avec Google
  
     const { email, given_name, family_name, picture } = req.body;
 
-    // Vérifier si l'utilisateur existe dans la base de données
     let user = await User.findOne({ email });
 
     if (!user) {
-      // Si l'utilisateur n'existe pas, le créer
       user = new User({
         firstName: given_name,
         lastName: family_name,
@@ -195,7 +182,6 @@ router.post('/google-login', async (req, res) => {
     user.isLoggedIn = true;
     user.lastLogin = new Date();
     await user.save();
-    // Générer un token JWT pour l'utilisateur
     const token = createToken(user._id);
     const profile = await Profile.findOne({ user: user._id }).select('username');
 
@@ -216,13 +202,10 @@ console.log(profile);
 router.get('/first-time', verifyToken , async (req, res) => {
 
   try {
-    // Récupérer l'ID de l'utilisateur à partir des paramètres de la requête
     const userId = req.user;
 console.log('User', userId);
-    // Rechercher l'utilisateur dans la base de données par son ID
     const user = await User.findById(userId);
 
-    // Vérifier si l'utilisateur existe
     if (!user) {
       return res.status(404).json({ message: "Utilisateur non trouvé" });
     }
@@ -230,20 +213,15 @@ console.log('User', userId);
     const profile = await Profile.findOne({ user: userId });
 
 if (!profile) {
-  // Si aucun profil n'est trouvé, renvoyer uniquement la valeur de firstTime
   return res.json({ firstTime: user.firstTime });
 }
 
-// Si un profil est trouvé, vérifier s'il a un nom d'utilisateur
 if (profile.username != null) {
-  // Si un nom d'utilisateur est trouvé, le renvoyer avec firstTime
   return res.json({ firstTime: user.firstTime, username: profile.username });
 } else {
-  // Si aucun nom d'utilisateur n'est trouvé, renvoyer seulement firstTime
   return res.json({ firstTime: user.firstTime });
 }
 
-    // Renvoyer la valeur de firstTime pour l'utilisateur
   } catch (error) {
     console.error("Erreur lors de la récupération de firstTime :", error);
     res.status(500).json({ message: "Erreur lors de la récupération de firstTime" });
@@ -251,11 +229,8 @@ if (profile.username != null) {
 });
 
 
-// Backend
 
-// Route pour vérifier le token et renvoyer le nom d'utilisateur
 router.get('/auth/check-token', verifyToken , async (req, res) => {
-  // Le token est valide, le nom d'utilisateur est déjà extrait dans le middleware
   try {
     const user = await Profile.findOne({ user: req.user }).select('username');
     if (!user) {
@@ -276,28 +251,23 @@ router.put('/update-password', verifyToken, async (req, res) => {
     const { oldPassword, newPassword, confirmPassword } = req.body;
     const userId = req.user.id;
 
-    // Vérifiez si les nouveaux mots de passe correspondent
     if (newPassword !== confirmPassword) {
       return res.status(400).json({ message: "Les nouveaux mots de passe ne correspondent pas." });
     }
 
-    // Trouvez l'utilisateur dans la base de données
     const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ message: "Utilisateur non trouvé." });
     }
 
-    // Vérifiez si l'ancien mot de passe est correct
     const isMatch = await bcrypt.compare(oldPassword, user.password);
     if (!isMatch) {
       return res.status(400).json({ message: "L'ancien mot de passe est incorrect." });
     }
 
-    // Hash le nouveau mot de passe
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(newPassword, salt);
 
-    // Mettez à jour le mot de passe dans la base de données
     user.password = hashedPassword;
     await user.save();
 
@@ -307,7 +277,6 @@ router.put('/update-password', verifyToken, async (req, res) => {
   }
 });
 
-// Route pour la connexion
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) {
@@ -315,34 +284,28 @@ router.post('/login', async (req, res) => {
   }
 
   try {
-    // Vérifier si l'utilisateur existe
     const user = await User.findOne({ email });
     if (!user) {
       return res.status(400).json({ message: 'L\'utilisateur n\'existe pas' });
     }
 
-    // Vérifier si l'utilisateur est banni
     if (user.isBanned) {
       return res.status(401).json({ message: 'Votre compte est banni. Veuillez contacter l\'administration.' });
     }
 
-    // Vérifier si le compte de l'utilisateur est temporairement suspendu
     if (user.isSuspended && user.suspensionEndDate && user.suspensionEndDate > new Date()) {
       return res.status(401).json({ message: 'Votre compte est temporairement suspendu jusqu\'au ' + user.suspensionEndDate + '. Veuillez contacter l\'administration.' });
     }
 
     if (user.isSuspended && user.suspensionEndDate && user.suspensionEndDate < new Date()) {
-      // Mettre à jour le statut de suspension
       user.isSuspended = false;
       user.reasonForSuspension = ''; 
       user.suspensionEndDate = null;
       await user.save();
     }
-    // Vérifier le mot de passe
     const passwordMatch = await bcrypt.compare(password, user.password);
 
     if (passwordMatch) {
-      // Mettre à jour le statut de connexion et la date de dernière connexion
       user.isLoggedIn = true;
       user.lastLogin = new Date();
       await user.save();
@@ -355,11 +318,9 @@ router.post('/login', async (req, res) => {
         res.status(200).json({ token, firstTime: user.firstTime, role: user.role });
       }
     } else {
-      // Sinon, renvoyer une erreur d'authentification
       res.status(401).json({ message: 'Mot de passe incorrect' });
     }
 
-    // Connexion réussie
   } catch (error) {
     console.error('Erreur lors de la connexion :', error);
     res.status(500).json({ message: 'Erreur lors de la connexion' });
@@ -367,7 +328,6 @@ router.post('/login', async (req, res) => {
 });
 
 
-// Route pour la déconnexion
 router.post('/logout', verifyToken , async (req, res) => {
   try {
     const userId = req.user; 
@@ -391,17 +351,14 @@ router.post('/logout', verifyToken , async (req, res) => {
 router.post('/reset-password', async (req, res) => {
   try {
     const { email } = req.body;
-    // Check if user exists
     const user = await User.findOne({ email });
     if (!user) {
       return res.status(404).send('User not found');
     }
 
-    // Generate new password
     const newPassword = crypto.randomBytes(8).toString('hex');
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-    // Update user's password
     user.password = hashedPassword;
     await user.save();
 
@@ -419,7 +376,6 @@ router.post('/reset-password', async (req, res) => {
     const facebookIconUrl = 'https://i.postimg.cc/gw8w2spV/facebook-icon.png';
     const tiktokIconUrl = 'https://i.postimg.cc/2bxV45V3/tiktok-icon.png';
     const instagramIconUrl = 'https://i.postimg.cc/gj0FdJKJ/instagram-icon.webp';
-    // Send reset password email
     let mailOptions = {
       from: 'spprtgemi@gmail.com',
       to: email,
@@ -465,7 +421,6 @@ router.post('/reset-password', async (req, res) => {
   }
 });
 
-// Route pour récupérer tous les utilisateurs
 router.get('/', async (req, res) => {
   try {
     const users = await User.find();
@@ -544,13 +499,10 @@ router.get('/search/:keyword',verifyToken, async (req, res) => {
       return res.status(400).json({ message: 'Le mot-clé doit comporter au moins deux caractères' });
     }
     
-    // Récupérer l'ID de l'utilisateur actuellement connecté
     const userId = req.user;
 
-    // Récupérer les followers et following de l'utilisateur actuellement connecté
     const userProfile = await Profile.findOne({ user: userId }).populate('followers following', 'user');
 
-    // Récupérer les utilisateurs dont le nom ou le prénom contient le mot-clé
     const users = await User.find({
       $or: [
         { firstName: { $regex: keyword, $options: 'i' } }, // i pour une recherche insensible à la casse
@@ -558,7 +510,6 @@ router.get('/search/:keyword',verifyToken, async (req, res) => {
       ]
     });
 
-    // Pour chaque utilisateur trouvé, vérifiez les correspondances avec les followers et following de l'utilisateur actuellement connecté
     const usersWithMatchingFriends = await Promise.all(users.map(async user => {
       const profile = await Profile.findOne({ user: user._id });
       if (profile) {
@@ -618,25 +569,20 @@ console.log('yourFollowing',yourFollowing);
 
 router.put('/block/:userId', verifyToken, async (req, res) => {
   try {
-    // Récupérer l'ID de l'utilisateur à bloquer
     const userId = req.params.userId;
 
-    // Récupérer le profil de l'utilisateur actuel
     const profile = await Profile.findOne({ user: req.user._id });
 
     if (!profile) {
       return res.json({ message: 'Profile not found' });
     }
 
-    // Vérifier si l'utilisateur à bloquer est déjà dans la liste des utilisateurs bloqués
     if (profile.blockedUsers.includes(userId)) {
       return res.json({ message: 'User already blocked' });
     }
 
-    // Ajouter l'utilisateur à la liste des utilisateurs bloqués
     profile.blockedUsers.push(userId);
 
-    // Enregistrer les modifications dans la base de données
     await profile.save();
 
     res.json({ message: 'User blocked successfully' });
@@ -649,22 +595,18 @@ router.put('/block/:userId', verifyToken, async (req, res) => {
 
 router.get('/block', verifyToken, async (req, res) => {
   try {
-    // Récupérer le profil de l'utilisateur actuel
     const profile = await Profile.findOne({ user: req.user._id });
 
     if (!profile) {
       return res.json({ message: 'Profile not found' });
     }
 
-    // Vérifier si des utilisateurs bloqués ont été trouvés dans le profil
     if (!profile.blockedUsers ) {
       return res.json({ message: 'No blocked users found' });
     }
 
-    // Récupérer les profils des utilisateurs bloqués
     const blockedUserProfiles = await Profile.find({ user: { $in: profile.blockedUsers } });
 
-    // Créer un tableau de promesses pour récupérer les détails de chaque utilisateur bloqué
     const blockedUsersPromises = blockedUserProfiles.map(async (blockedUserProfile) => {
       const user = await User.findById(blockedUserProfile.user);
       return {
@@ -673,14 +615,11 @@ router.get('/block', verifyToken, async (req, res) => {
         profilePicture: user.profilePicture,
         email: user.email,
         username: blockedUserProfile.username, // Ajouter le nom d'utilisateur du profil bloqué
-        // Ajoutez d'autres détails de l'utilisateur que vous souhaitez inclure
       };
     });
 
-    // Attendre que toutes les promesses de récupération des utilisateurs bloqués se terminent
     const blockedUsers = await Promise.all(blockedUsersPromises);
 
-    // Renvoyer les utilisateurs bloqués avec leurs détails
     res.json({ blockedUsers });
   } catch (error) {
     console.error('Error fetching blocked users:', error);
@@ -691,25 +630,20 @@ router.get('/block', verifyToken, async (req, res) => {
 
 router.put('/unblock/:userId', verifyToken, async (req, res) => {
   try {
-    // Récupérer l'ID de l'utilisateur à débloquer
     const userId = req.params.userId;
 
-    // Récupérer le profil de l'utilisateur actuel
     const profile = await Profile.findOne({ user: req.user._id });
 
     if (!profile) {
       return res.status(404).json({ message: 'Profile not found' });
     }
 
-    // Vérifier si l'utilisateur à débloquer est dans la liste des utilisateurs bloqués
     if (!profile.blockedUsers.includes(userId)) {
       return res.status(400).json({ message: 'User not blocked' });
     }
 
-    // Retirer l'utilisateur de la liste des utilisateurs bloqués
     profile.blockedUsers = profile.blockedUsers.filter(id => id.toString() !== userId);
 
-    // Enregistrer les modifications dans la base de données
     await profile.save();
 
     res.json({ message: 'User unblocked successfully' });
@@ -722,16 +656,13 @@ router.put('/unblock/:userId', verifyToken, async (req, res) => {
 
 
 
-// Route pour récupérer un utilisateur par son ID
 router.get('/User', verifyToken, async (req, res) => {
   try {
-    // Recherchez l'utilisateur en utilisant son ID
     const user = await User.findOne({ _id: req.user }).select('firstName lastName email profilePicture');;
     if (!user) {
       return res.status(404).json({ message: 'Utilisateur non trouvé' });
     }
 
-    // Recherchez le profil associé à l'utilisateur et peuplez les données de l'utilisateur
     const userProfile = await Profile.findOne({ user: user._id }).select('bio interests profileType city birthDate username ');;
     if (!userProfile) {
       return res.status(404).json({ message: 'Profil non trouvé pour cet utilisateur' });
@@ -741,14 +672,12 @@ router.get('/User', verifyToken, async (req, res) => {
     console.log('Nombre d\'événements organisés par l\'utilisateur :', eventCount);
 
 
-    // Retournez à la fois l'utilisateur et ses informations de profil
     res.json({ user, profile: userProfile, eventCount });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 });
 
-// Route pour récupérer un utilisateur par son ID
 router.get('/UserProfile/:username', verifyToken, async (req, res) => {
   try {
 const username = req.params.username;
@@ -757,13 +686,11 @@ const username = req.params.username;
     if (!userProfile) {
       return res.status(404).json({ message: 'Profil non trouvé pour cet utilisateur' });
     }
-    // Recherchez l'utilisateur en utilisant son ID
     const user = await User.findOne({ _id: userProfile.user }).select('firstName lastName email profilePicture');
     if (!user) {
       return res.status(404).json({ message: 'Utilisateur non trouvé' });
     }
 
-    // Recherchez le profil associé à l'utilisateur et peuplez les données de l'utilisateur
     const BlockList = await Profile.findOne({user : req.user}).select('blockedUsers');
 
     const verif  = BlockList.blockedUsers.includes(userProfile.user);
@@ -772,7 +699,6 @@ const username = req.params.username;
     console.log('Nombre d\'événements organisés par l\'utilisateur :', eventCount);
 
 
-    // Retournez à la fois l'utilisateur et ses informations de profil
     res.json({ user, profile: userProfile, eventCount, verif });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -818,7 +744,6 @@ router.get('/blockuser', async (req, res) => {
   }
 });
 
-// Route pour mettre à jour un utilisateur par son ID
 router.put('/:id', async (req, res) => {
   try {
     const updatedUser = await User.findByIdAndUpdate(req.params.id, req.body, { new: true });
@@ -836,7 +761,6 @@ router.put('/admin/information', verifyToken, upload.single('profilePicture'), a
   try {
       const userId = req.user; // L'ID de l'utilisateur est extrait du token vérifié
       
-      // Recherche de l'utilisateur dans la base de données par son ID
       const user = await User.findById(userId);
       if (!user) {
           return res.status(404).json({ error: 'Utilisateur introuvable' });
@@ -848,24 +772,19 @@ router.put('/admin/information', verifyToken, upload.single('profilePicture'), a
       user.password = hashedPassword || user.password;
 
       }
-      // Mettre à jour les champs du profil de l'utilisateur avec les données fournies dans le corps de la requête
       user.firstName = req.body.firstName || user.firstName;
       user.lastName = req.body.lastName || user.lastName;
       user.profilePicture = profilePicture || user.profilePicture;
 
-      // Ajoutez d'autres champs de profil à mettre à jour selon vos besoins
-
-      // Enregistrement des modifications dans la base de données
+    
       await user.save();
 
-      // Répondre avec un message de succès
       res.status(200).json({ message: 'Profil utilisateur mis à jour avec succès' });
   } catch (error) {
       console.error('Erreur lors de la mise à jour du profil utilisateur:', error);
       res.status(500).json({ error: 'Erreur lors de la mise à jour du profil utilisateur' });
   }
 });
-// Route pour supprimer un utilisateur par son ID
 router.delete('/:id', async (req, res) => {
   try {
     const deletedUser = await User.findByIdAndDelete(req.params.id);

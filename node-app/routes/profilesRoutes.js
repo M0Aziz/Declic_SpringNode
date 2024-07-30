@@ -12,14 +12,12 @@ const multer = require('multer');
 const fs = require('fs');
 const path = require('path');
 
-// Middleware pour vérifier si l'ID de l'utilisateur existe
 
 
 
 const uploadDir = path.join(__dirname, '..','public', 'images');
 fs.existsSync(uploadDir) || fs.mkdirSync(uploadDir);
 
-// Configuration de Multer pour le stockage des images
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     cb(null, uploadDir);
@@ -31,11 +29,10 @@ const storage = multer.diskStorage({
 const upload = multer({ storage: storage });
 /*router.post('/', AuthMiddl, upload.array('additionalImages'), async (req, res) => {
   try {
-    console.log('Début de la route POST /'); // Ajout d'un log pour indiquer le début de la route
+    console.log('Début de la route POST /'); 
     
-    console.log('Données du formulaire :', req.body); // Affichage des données du formulaire
+    console.log('Données du formulaire :', req.body); 
 
-    // Récupérez les données du formulaire
   
     const CheckUsername = await User.findOne({ username: req.body.username });
     if (CheckUsername) {
@@ -46,7 +43,6 @@ const { bio, interests, profileType, city, birthDate, username } = req.body;
 const user = req.user;
 console.log('Données extraites du formulaire :', { bio, interests, profileType, city, birthDate, username, user }); // Affichage des données extraites du formulaire
 
-    // Récupérez les noms des fichiers des images téléchargées
     const imageFiles = []; // Tableau pour stocker les noms de fichiers des images
 
     if (req.files && req.files.length) {
@@ -56,20 +52,16 @@ console.log('Données extraites du formulaire :', { bio, interests, profileType,
             const fileName = `${Date.now() + i}.${imageType}`;
             const filePath = path.join('public/images', fileName); // Chemin de fichier où enregistrer l'image
     
-            // Enregistrer l'image sur le serveur
             fs.writeFileSync(filePath, base64Data, 'base64');
     
-            // Ajouter le nom du fichier à la liste des images
             imageFiles.push(fileName);
         }
     } else {
-        // Gérer le cas où aucun fichier n'est téléchargé
         console.log('Aucun fichier téléchargé');
     }
     
     console.log('Noms de fichiers des images :', imageFiles); // Affichage des noms de fichiers des images
 
-    // Créez le nouveau profil avec les données et les noms des images
     const newProfile = await Profile.create({
       bio,
       interests,
@@ -83,7 +75,6 @@ console.log('Données extraites du formulaire :', { bio, interests, profileType,
 
     console.log('Nouveau profil créé :', newProfile); // Affichage du nouveau profil créé
     
-    // Mettez à jour le champ firstTime de l'utilisateur
     const updatedUser = await User.findById(user);
     if (updatedUser) {
       updatedUser.firstTime = false;
@@ -141,13 +132,11 @@ router.post('/', verifyToken, upload.array('additionalImages'), async (req, res)
       return res.status(400).json({ error: 'Le nom d\'utilisateur doit commencer par une lettre ou un chiffre et ne contenir que des lettres et des chiffres' });
     }
 
-    // Vérifier si le nom d'utilisateur est déjà utilisé
     const existingProfile = await Profile.findOne({ username });
     if (existingProfile) {
       return res.status(400).json({ error: 'Le nom d\'utilisateur est déjà utilisé' });
     }
 
-    // Traitement des images téléchargées
     //const imageFiles = req.files.map(file => file.filename);
     let imageFiles = [];
     if (req.files && req.files.length > 0) {
@@ -162,7 +151,6 @@ router.post('/', verifyToken, upload.array('additionalImages'), async (req, res)
     if (imageFiles.length < 2) {
       return res.status(400).json({ error: 'Vous devez télécharger au moins 2 images' });
     }
-    // Créer un nouveau profil
     const newProfile = await Profile.create({
       bio,
       interests,
@@ -174,7 +162,6 @@ router.post('/', verifyToken, upload.array('additionalImages'), async (req, res)
       additionalImages: imageFiles
     });
 
-    // Mettre à jour le champ firstTime de l'utilisateur
     await User.findByIdAndUpdate(user, { firstTime: false }, { new: true });
 
     console.log('Fin de la route POST / avec succès');
@@ -188,15 +175,12 @@ router.post('/', verifyToken, upload.array('additionalImages'), async (req, res)
 
 router.get('/getUserImages',verifyToken, async (req, res) => {
   try {
-    // Trouver le profil de l'utilisateur actuellement authentifié
     const userProfile = await Profile.findOne({ user: req.user }).select('additionalImages');
 
-    // Vérifier si le profil existe
     if (!userProfile) {
       return res.status(404).json({ message: 'Profil non trouvé' });
     }
 
-    // Renvoyer les additionalImages du profil
     res.json(userProfile.additionalImages);
   } catch (error) {
     console.error('Erreur lors de la récupération des additionalImages :', error);
@@ -218,7 +202,6 @@ router.get('/:id', async (req, res) => {
 
 
   
-// Route pour mettre à jour le profil d'un utilisateur par son ID
 router.put('/User', verifyToken, upload.single('profilePicture'), async (req, res) => {
   try {
     console.log('Données de la requête reçue:', req.body); // Afficher les données de la requête
@@ -231,7 +214,7 @@ router.put('/User', verifyToken, upload.single('profilePicture'), async (req, re
     console.log('Données utilisées pour la mise à jour du profil :', { bio, profileType, city, birthDate, firstName, lastName, profilePicture });
 
     const updatedProfile = await Profile.findOneAndUpdate(
-      { user: req.user }, // Utiliser findOneAndUpdate
+      { user: req.user }, 
       { $set: { bio, birthDate, city, profileType } },
       { new: true }
     );
@@ -268,36 +251,30 @@ router.put('/User', verifyToken, upload.single('profilePicture'), async (req, re
 
 router.put('/UserImages', verifyToken, upload.array('additionalImages', 5), async (req, res) => {
   try {
-    // Récupérer les images existantes de la base de données
     const userProfile = await Profile.findOne({ user: req.user }).select('additionalImages');
 
     if (!userProfile) {
       return res.status(404).json({ message: 'Profil non trouvé' });
     }
 
-    // Récupérer les noms de fichier des nouvelles images
     const newImages = req.files.map(file => file.filename);
     console.log('New images: ', newImages);
 
-    // Récupérer les noms de fichier des images supprimées
     const removedImages = req.body.removedImages || [];
     console.log('Removed images: ', removedImages);
 
-    // Combiner les images existantes, les nouvelles images et les images supprimées
     const updatedImages = userProfile.additionalImages
       .filter(image => !removedImages.includes(image)) // Retirer les images supprimées
-      .concat(newImages); // Ajouter les nouvelles images
+      .concat(newImages); 
 
     console.log('Updated images: ', updatedImages);
 
-    // Valider le nombre total d'images
     const totalImages = updatedImages.length;
     console.log('Total images: ', totalImages);
     if (totalImages < 2 || totalImages > 5) {
       return res.status(400).json({ message: 'Le nombre d\'images doit être compris entre 2 et 5.' });
     }
 
-    // Mettre à jour les additionalImages dans la base de données
     const updatedProfile = await Profile.findOneAndUpdate(
       { user: req.user },
       { $set: { additionalImages: updatedImages } },
@@ -318,15 +295,12 @@ router.put('/UserImages', verifyToken, upload.array('additionalImages', 5), asyn
 router.get('/' , verifyToken, async (req, res) => {
   console.log(req.user);
   try {
-    // Trouver le profil de l'utilisateur actuellement authentifié
     const userProfile = await Profile.findOne({ user: req.user }).select('interests');
 
-    // Vérifier si le profil existe
     if (!userProfile) {
       return res.status(404).json({ message: 'Profil non trouvé' });
     }
 
-    // Renvoyer les intérêts de l'utilisateur
     res.json(userProfile.interests);
   } catch (error) {
     console.error('Erreur lors de la récupération des intérêts :', error);
@@ -348,36 +322,27 @@ router.get('/Friend/get', verifyToken, async (req, res) => {
           return res.status(404).json({ message: "Profil de l'utilisateur introuvable." });
       }
 
-      // Créer un objet pour stocker les amis uniques par leur ID
       const uniqueFriends = {};
 
-      // Parcourir les amis de l'utilisateur pour ne garder que le dernier enregistrement
       userProfile.friends.forEach((friend) => {
-          // Si l'ami existe déjà dans l'objet uniqueFriends
           if (uniqueFriends[friend.user._id]) {
-              // Comparer les dates et garder le plus récent
               if (uniqueFriends[friend.user._id].date < friend.date) {
                   uniqueFriends[friend.user._id] = { ...friend.toObject() };
               }
           } else {
-              // Si l'ami n'existe pas encore, l'ajouter à l'objet uniqueFriends
               uniqueFriends[friend.user._id] = { ...friend.toObject() };
           }
       });
 
-      // Convertir l'objet uniqueFriends en tableau
       const uniqueFriendsArray = Object.values(uniqueFriends);
 
-      // Récupérer le nom d'utilisateur (username) pour chaque ami
       await Promise.all(uniqueFriendsArray.map(async (friend) => {
           const friendProfile = await Profile.findOne({ user: friend.user._id }).select('username');
           friend.username = friendProfile.username;
       }));
 
-      // Trier les amis par date (du plus récent au plus ancien)
       uniqueFriendsArray.sort((a, b) => b.date - a.date);
 
-      // Répondre avec les amis uniques de l'utilisateur incluant les informations de l'utilisateur
       res.json(uniqueFriendsArray);
   } catch (error) {
       console.error("Erreur lors de la récupération des amis de l'utilisateur:", error);
@@ -398,20 +363,16 @@ router.get('/Friend/get', verifyToken, async (req, res) => {
 
 router.put('/updateUserInterests', verifyToken, async (req, res) => {
   try {
-    const { interests } = req.body; // Les nouveaux intérêts envoyés depuis le front-end
+    const { interests } = req.body; 
 
-    // Trouver le profil de l'utilisateur actuellement authentifié
     const userProfile = await Profile.findOne({ user: req.user });
 
-    // Vérifier si le profil existe
     if (!userProfile) {
       return res.status(404).json({ message: 'Profil non trouvé' });
     }
 
-    // Mettre à jour les intérêts de l'utilisateur dans le profil
     userProfile.interests = interests;
 
-    // Sauvegarder les modifications dans la base de données
     await userProfile.save();
 
     res.json({ message: 'Intérêts mis à jour avec succès' });
@@ -423,197 +384,6 @@ router.put('/updateUserInterests', verifyToken, async (req, res) => {
 
 
   
-// Route pour supprimer le profil d'un utilisateur par son ID
-/*router.delete('/:id', checkUserExists, async (req, res) => {
-  try {
-    const deletedProfile = await Profile.findByIdAndDelete(req.params.id);
-    if (!deletedProfile) {
-      return res.status(404).json({ message: 'Profil non trouvé' });
-    }
-    res.json({ message: 'Profil supprimé avec succès' });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-});
-
-/*
-// Route pour ajouter un follower à un profil
-router.post('/:id/followers', checkUserExists, async (req, res) => {
-    try {
-      const profile = await Profile.findById(req.params.id);
-      if (!profile) {
-        return res.status(404).json({ message: 'Profil non trouvé' });
-      }
-      // Ajouter le follower à la liste
-      profile.followers.push(req.body.user);
-      await profile.save();
-      res.json(profile);
-    } catch (error) {
-      res.status(400).json({ message: error.message });
-    }
-  });
-  
-  // Route pour supprimer un follower d'un profil
-  router.delete('/:id/followers/:followerId', checkUserExists, async (req, res) => {
-    try {
-      const profile = await Profile.findById(req.params.id);
-      if (!profile) {
-        return res.status(404).json({ message: 'Profil non trouvé' });
-      }
-      // Retirer le follower de la liste
-      profile.followers = profile.followers.filter(follower => follower.toString() !== req.params.followerId);
-      await profile.save();
-      res.json(profile);
-    } catch (error) {
-      res.status(500).json({ message: error.message });
-    }
-  });
-  
-  // Route pour ajouter un profil à la liste de following d'un utilisateur
-  router.post('/:id/following', checkUserExists, async (req, res) => {
-    try {
-      const profile = await Profile.findById(req.params.id);
-      if (!profile) {
-        return res.status(404).json({ message: 'Profil non trouvé' });
-      }
-      // Ajouter le profil à la liste de following
-      profile.following.push(req.body.user);
-      await profile.save();
-      res.json(profile);
-    } catch (error) {
-      res.status(400).json({ message: error.message });
-    }
-  });
-  
-  // Route pour supprimer un profil de la liste de following d'un utilisateur
-  router.delete('/:id/following/:followingId', checkUserExists, async (req, res) => {
-    try {
-      const profile = await Profile.findById(req.params.id);
-      if (!profile) {
-        return res.status(404).json({ message: 'Profil non trouvé' });
-      }
-      // Retirer le profil de la liste de following
-      profile.following = profile.following.filter(following => following.toString() !== req.params.followingId);
-      await profile.save();
-      res.json(profile);
-    } catch (error) {
-      res.status(500).json({ message: error.message });
-    }
-  });
-*/
-
-
-// Route pour ajouter un follower à un profil et mettre à jour la liste de following
-/*router.put('/followers/:usernameFollower', verifyToken, async (req, res) => {
-  try {
-    console.log("Requête PUT reçue pour suivre un utilisateur.");
-    
-    // Récupérer l'ID de l'utilisateur actuel
-    const userId = req.user;
-    console.log("ID de l'utilisateur actuel:", userId);
-    
-    // Récupérer l'objet io pour les notifications en temps réel
-    const io = req.io;
-    console.log('Socket :', io);
-    
-    // Récupérer le nom d'utilisateur du follower à ajouter
-    console.log("Nom d'utilisateur du follower:", req.params.usernameFollower);
-    
-    // Rechercher le follower dans la base de données
-    const followerProfile = await Profile.findOne({ username: req.params.usernameFollower }).select('user profileType blockedUsers');
-    console.log("Profil du follower trouvé:", followerProfile);
-    
-    // Vérifier si le follower a été trouvé
-    if (!followerProfile) {
-      console.log("Utilisateur introuvable.");
-      throw Error("Utilisateur introuvable");
-    }
-
-    // Vérifier si l'utilisateur actuel est dans la blocklist du follower
-    if (followerProfile.blockedUsers.includes(userId)) {
-      console.log("Impossible d'ajouter le follower, l'utilisateur actuel est bloqué par le follower.");
-      throw Error("Impossible d'ajouter le follower, l'utilisateur actuel est bloqué par le follower.");
-    }
-
-    // Vérifier si le follower est dans la blocklist de l'utilisateur actuel
-    const currentUserProfile = await Profile.findOne({ user: userId }).select('blockedUsers');
-    if (currentUserProfile.blockedUsers.includes(followerProfile.user)) {
-      console.log("Impossible d'ajouter le follower, le follower est bloqué par l'utilisateur actuel.");
-      throw Error("Impossible d'ajouter le follower, le follower est bloqué par l'utilisateur actuel.");
-    }
-    
-  // Mettre à jour les relations d'amitié en fonction du type de profil du follower
-if (followerProfile.profileType === 'public') {
-
-          const existingFriendship = await Profile.findOne({
-            user: userId,
-            'friends.user': followerProfile.user
-        });
-
-
-        await Promise.all([
-          Profile.findOneAndUpdate({ user: userId }, { $addToSet: { following: followerProfile.user } }, { new: true }),
-          Profile.findOneAndUpdate({ user: followerProfile.user }, { $addToSet: { followers: userId } }, { new: true }),
-          ]);
-
-
-if (existingFriendship) {
-    // Si une amitié existe déjà, mettre à jour le statut et la date
-    await Promise.all([
-        Profile.findOneAndUpdate(
-            { user: userId, 'friends.user': followerProfile.user },
-            { $set: { 'friends.$.status': 'O', 'friends.$.date': Date.now() } },
-            { new: true }
-        ),
-        Profile.findOneAndUpdate(
-            { user: followerProfile.user, 'friends.user': userId },
-            { $set: { 'friends.$.status': 'O', 'friends.$.date': Date.now() } },
-            { new: true }
-        )
-    ]);
-}else {
-  // Si aucune amitié n'existe, ajouter une nouvelle amitié
-  
-    await Promise(Profile.findOneAndUpdate(
-          { user: followerProfile.user },
-          { $addToSet: { friends: { user: userId, status: 'O', date: Date.now() } } },
-          { new: true }
-      )
-    );
-  
-}
-}
-      else {
-        // Mettre à jour seulement la liste des amis du follower en attente de confirmation
-        await Profile.findOneAndUpdate(
-            { user: followerProfile.user },
-            { $addToSet: { friends: { user: userId, status: 'N', date: Date.now() } } },
-            { new: true, upsert: true }
-        );
-      }
-
-    // Envoyer une notification au follower
-    console.log("Envoi d'une notification au follower.");
-    const username = await Profile.findOne({ user: userId }).select('username');
-    const notificationType = followerProfile.profileType === 'public' ? 'add_friends' : 'add_friends_private';
-    const notification = new Notification({
-      recipient: followerProfile.user,
-      type: notificationType,
-      content: `${username.username}`,
-      date: new Date()
-    });
-    await notification.save();
-    req.io.emit('newNotification', notification);
-
-    // Répondre avec le profil mis à jour du follower
-    res.json({ message: "Follower ajouté avec succès" });
-  } catch (error) {
-    console.log("Erreur lors du traitement de la requête PUT:", error.message);
-    res.status(400).json({ message: error.message });
-  }
-});
-*/
-
 
 router.put('/followers/:usernameFollower', verifyToken, async (req, res) => {
   try {
@@ -732,43 +502,35 @@ router.put('/followers/:usernameFollower', verifyToken, async (req, res) => {
 });
 
 
-  // Route pour retirer un follower d'un profil et mettre à jour la liste de following
   router.put('/followers/:usernameFollower/remove', verifyToken, async (req, res) => {
     try {
         const userId = req.user._id;
         const usernameFollower = req.params.usernameFollower;
 
-        // Rechercher l'utilisateur actuel
         const user = await Profile.findOne({ user: userId });
         if (!user) {
             throw Error("Utilisateur introuvable");
         }
 
-        // Rechercher le follower dans la base de données
         const follower = await Profile.findOne({ username: usernameFollower });
         if (!follower) {
             throw Error("Follower introuvable");
         }
 
-        // Vérifier si l'utilisateur actuel bloque le follower
         if (user.blockedUsers.includes(follower.user)) {
             throw Error("Impossible de retirer le follower, l'utilisateur actuel bloque le follower");
         }
 
-        // Vérifier si le follower bloque l'utilisateur actuel
         if (follower.blockedUsers.includes(userId)) {
             throw Error("Impossible de retirer le follower, le follower bloque l'utilisateur actuel");
         }
 
-        // Retirer le follower de la liste de followers de l'utilisateur suivi
         user.following.pull(follower.user);
         await user.save();
 
-        // Retirer l'utilisateur de la liste de followers du follower
         follower.followers.pull(userId);
         await follower.save();
 
-        // Mettre à jour le statut de l'amitié dans les deux profils
         const existingFriendshipUser = user.friends.find(friend => friend.user.equals(follower.user));
       /*  if (existingFriendshipUser) {
             existingFriendshipUser.status = 'NF'; // Not Friend
@@ -800,51 +562,39 @@ router.put('/followers/private/:userId', verifyToken, async (req, res) => {
     const myUserId = req.user._id;
     const targetUserId = req.params.userId;
 
-    // Rechercher l'utilisateur actuel
     const user = await Profile.findOne({ user: myUserId });
     if (!user) {
       throw Error("Utilisateur introuvable");
     }
 
-    // Rechercher l'utilisateur cible
     const targetUser = await Profile.findOne({ user: targetUserId });
     if (!targetUser) {
       throw Error("Utilisateur cible introuvable");
     }
 
-    // Vérifier si l'utilisateur actuel est bloqué par l'utilisateur cible
     if (targetUser.blockedUsers.includes(myUserId)) {
       throw Error("Impossible d'accepter l'amitié, vous êtes bloqué par l'utilisateur cible.");
     }
 
-    // Vérifier si l'utilisateur cible est bloqué par l'utilisateur actuel
     if (user.blockedUsers.includes(targetUserId)) {
       throw Error("Impossible d'accepter l'amitié, l'utilisateur cible est bloqué.");
     }
 
-    // Rechercher l'ID du targetUserId dans la liste des amis de l'utilisateur actuel
     const existingFriendshipIndex = user.friends.findIndex(friend => friend.user.equals(targetUserId));
 
-    // Si l'amitié existe
     if (existingFriendshipIndex !== -1) {
-      // Si l'action est d'accepter l'amitié
       if (req.body.action === 'accept') {
-        // Mettre à jour le statut et la date de l'amitié existante
         user.friends[existingFriendshipIndex].status = 'O'; // Confirmed
         user.friends[existingFriendshipIndex].date = new Date();
       } else if (req.body.action === 'delete') {
-        // Si l'action est de supprimer l'amitié
         user.friends[existingFriendshipIndex].status = 'D'; // Deleted
       }
     } else {
-      // Si l'amitié n'existe pas encore et que l'action est d'accepter l'amitié
       if (req.body.action === 'accept') {
-        // Ajouter une nouvelle amitié
         user.friends.push({ user: targetUserId, status: 'O', date: new Date() }); // Confirmed
       }
     }
 
-    // Mettre à jour les relations d'amitié en fonction de l'action 'accept'
     if (req.body.action === 'accept') {
       await Promise.all([
         Profile.findOneAndUpdate({ user: myUserId }, { $addToSet: { followers: targetUserId } }, { new: true }),
@@ -852,7 +602,6 @@ router.put('/followers/private/:userId', verifyToken, async (req, res) => {
       ]);
     }
 
-    // Sauvegarder les modifications
     await Promise.all([user.save(), targetUser.save()]);
 
     const notification = new Notification({
@@ -863,7 +612,6 @@ router.put('/followers/private/:userId', verifyToken, async (req, res) => {
     });
     await notification.save();
 
-    // Émettre l'événement via socket pour informer l'organisateur de la nouvelle notification
     req.io.emit('newNotification', notification);
 
 
@@ -879,28 +627,22 @@ router.put('/followers/private/:userId', verifyToken, async (req, res) => {
 
 router.put('/cancel/friendrequest/:username', verifyToken, async (req, res) => {
   try {
-    // ID de l'utilisateur actuel
     const myUserId = req.user._id;
 
-    // ID de l'autre utilisateur
     const otherUserId = req.params.username;
 
-    // Rechercher le profil de l'autre utilisateur
     const otherUserProfile = await Profile.findOne({ username: otherUserId });
     if (!otherUserProfile) {
       throw new Error("Profil de l'autre utilisateur introuvable");
     }
 
-    // Vérifier si l'utilisateur actuel a envoyé une demande d'ami à l'autre utilisateur
     const friendRequest = otherUserProfile.friends.find(friend => friend.user.equals(myUserId) && friend.status === 'N');
     if (!friendRequest) {
       throw new Error("Aucune demande d'ami en attente de cet utilisateur");
     }
 
-    // Mettre à jour le statut de la demande d'ami en annulant la demande
     friendRequest.status = 'D'; // 'D' pour annulé
 
-    // Enregistrer les modifications dans la base de données
     await otherUserProfile.save();
 
     res.json({ message: "Demande d'ami annulée avec succès" });
@@ -937,7 +679,6 @@ const id =req.query.id;
     if (currentDate >= unsubscribeDeadlineDate) {
       return res.status(400).json({ error: 'La date de l\'activité est antérieure ou égale à la date limite de désinscription' });
     }
-    // Récupérer l'utilisateur spécifié par userId
     const user = await User.findById(userId);
 
     if (!user) {
@@ -956,7 +697,6 @@ const id =req.query.id;
       ]
     }).populate('user', 'firstName lastName profilePicture');
 
-    // Extract the necessary information from each friend
    /* const friendsList = friends.map(friend => ({
       _id: friend.user._id,
       username: friend.username,
@@ -966,7 +706,6 @@ const id =req.query.id;
     }));*/
 
     const friendsList = friends.map(friend => {
-      // Vérifier si l'ami est l'organisateur
       if (friend.user._id.toString() === activity.organizer.toString()) {
         return null; // Exclure l'organisateur de la liste
       }
@@ -990,7 +729,6 @@ const id =req.query.id;
 
 let typingStatus = {}; // Stocker l'état de frappe des utilisateurs
 
-// Route pour mettre à jour l'état de frappe
 router.post('/typing', verifyToken, (req, res) => {
   const { recipient, isTyping } = req.body;
   
@@ -1006,14 +744,11 @@ router.get('/typing-status/:recipient', verifyToken, (req, res) => {
   res.status(200).json({ isTyping: isTyping || false });
 });
 
-// Route pour marquer la notification comme lue
 router.put('/friends/:friendId/markAsRead', verifyToken, async (req, res) => {
   try {
-    // Récupérer l'ID de la notification à marquer comme lue
     const friendId = req.params.friendId;
 const myId = req.user;
-    // Rechercher l'ami dans la base de données et le marquer comme vu
-  // Rechercher l'ami dans la base de données et le marquer comme vu
+
 const userProfile = await Profile.findOneAndUpdate(
   { 'friends._id' : friendId }, // Filtrer par votre ID utilisateur et l'ID de l'ami
   { $set: { 'friends.$.vuByUser': true } }, // Mettre à jour le champ vuByUser du friend correspondant
@@ -1033,7 +768,6 @@ if (!userProfile) {
 
 
 
-  // Route pour supprimer le profil et l'utilisateur par son ID
 router.delete('/:id', async (req, res) => {
     try {
       const deletedProfile = await Profile.findByIdAndUpdate(req.params.id);
@@ -1042,13 +776,11 @@ router.delete('/:id', async (req, res) => {
         
       }
   
-      // Supprimer l'utilisateur de la liste de following des autres utilisateurs
       await Profile.updateMany(
         { followers: deletedProfile.user },
         { $pull: { followers: deletedProfile.user } }
       );
   
-      // Supprimer l'utilisateur de la liste de followers des autres utilisateurs
       await Profile.updateMany(
         { following: deletedProfile.user },
         { $pull: { following: deletedProfile.user } }
@@ -1060,7 +792,6 @@ router.delete('/:id', async (req, res) => {
 
       console.log('ID de l\'utilisateur à désactiver :', deletedProfile.user);
 
-      // Modifier les informations de l'utilisateur dans le modèle User
       const updatedUser = await User.findByIdAndUpdate(
         deletedProfile.user,
         {
@@ -1075,18 +806,15 @@ router.delete('/:id', async (req, res) => {
         return res.status(404).json({ message: 'Utilisateur non trouvé' });
       }
   
-      // Mettre à jour la visibilité des commentaires de l'utilisateur à false
       await Comment.updateMany({ user: deletedProfile.user }, { visibility: false });
       const updatedEvents = await Activity.find({ organizer: deletedProfile.user });
     //  console.log('Updated Events:', updatedEvents); // Ajoutez cette ligne pour vérifier les événements récupérés
 
-      // Mettre à jour la visibilité des activités de l'utilisateur
        await Activity.updateMany(
         { organizer: deletedProfile.user },
         { visibility: false }
       );
   
-      // Créer les notifications pour les participants et les personnes en liste d'attente des événements
       /*const eventIds = updatedEvents.map(event => event._id);
       const eventParticipants = await Profile.find({ $or: [{ participants: { $in: eventIds } }, { waitingList: { $in: eventIds } }] });
       const notificationPromises = eventParticipants.map(async participant => {
@@ -1114,9 +842,7 @@ router.delete('/:id', async (req, res) => {
         return Notification.insertMany(eventNotifications);
       });
       await Promise.all(notificationPromises);*/
-      // Créer les notifications pour les participants et les personnes en liste d'attente des événements
-      // Créer les notifications pour les participants et les personnes en liste d'attente des événements
-     // Créer les notifications pour les participants et les personnes en liste d'attente des événements
+  
      const currentDate = new Date();
      const participantIds = updatedEvents.flatMap(event => event.participants);
      const waitingListIds = updatedEvents.flatMap(event => event.waitingList);
@@ -1130,14 +856,12 @@ router.delete('/:id', async (req, res) => {
      eventParticipants.forEach(async participant => {
          const eventNotifications = [];
      
-         // Rechercher les événements auxquels l'utilisateur participe
          const participantEvents = updatedEvents.filter(event => {
              return event.participants.includes(participant.user) || event.waitingList.includes(participant.user);
          });
      
          participantEvents.forEach(event => {
              const eventDate = event.date;
-             // Vérifier si la date de l'événement est future
              if (eventDate > currentDate) {
                  const notificationContent = `L'événement "${event.description}" auquel vous avez participé a été supprimé par l'utilisateur.`;
                  const notification = {

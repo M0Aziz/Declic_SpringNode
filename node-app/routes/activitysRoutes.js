@@ -10,15 +10,14 @@ const multer = require('multer');
 const verifyToken = require('../middleware/authMiddleware');
 const axios = require('axios');
 
-// Route pour créer une nouvelle activité
 
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, 'public/images'); // Définissez le répertoire de destination des fichiers téléchargés
+    cb(null, 'public/images'); 
   },
   filename: function (req, file, cb) {
-    cb(null, Date.now() + '-' + file.originalname); // Définissez le nom de fichier pour le fichier téléchargé
+    cb(null, Date.now() + '-' + file.originalname); 
   },
 });
 
@@ -31,12 +30,11 @@ router.post('/', verifyToken ,upload.single('file'), async (req, res) => {
 
   try {
     const { title, description, dateStart, dateEnd,unsubscribeDeadline, location, repeat, currency, city, category,showLocation, price, type } = req.body;
-    const organizer = req.user; // L'organisateur est l'utilisateur actuel extrait du token
+    const organizer = req.user; 
     const Picture = req.file.filename;
     const repeatArray = Object.keys(repeat).filter(key => repeat[key] === 'true');
 
     
-    // Vérification des champs dans l'objet category
     const categoryArray = category.map(item => item.value);
 
   const newActivity = new Activity({
@@ -54,30 +52,10 @@ router.post('/', verifyToken ,upload.single('file'), async (req, res) => {
     price,
     showLocation,
     profileType : type,
-    image: Picture, // Chemin du fichier téléchargé
+    image: Picture, 
     date : new Date(),
   });
 
-/*}else {
-
-    const newActivity = new Activity({
-      organizer,
-      name : title,
-      description,
-      dateStart : startDate,
-      dateEnd : endDate,
-      unsubscribeDeadline,
-      repeat: repeatArray,
-      currency,
-      city,
-      category: categoryArray,
-      price,
-      profileType : type,
-      image: Picture, // Chemin du fichier téléchargé
-      date : new Date(),
-    });
-
-  }*/
     const savedActivity = await newActivity.save();
     res.status(201).json(savedActivity);
   } catch (error) {
@@ -87,13 +65,11 @@ router.post('/', verifyToken ,upload.single('file'), async (req, res) => {
 
 
 
-// Route pour qu'un utilisateur participe à un événement
 router.put('/:activityId/participate/', verifyToken, async (req, res) => {
   try {
     const { activityId } = req.params;
      const userId = req.user;
      const io = req.io;
-    // Récupérer les informations de l'utilisateur à partir du modèle User
     const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ message: 'Utilisateur non trouvé' });
@@ -101,32 +77,26 @@ router.put('/:activityId/participate/', verifyToken, async (req, res) => {
 
     const { firstName, lastName } = user;
 
-    // Vérifier si l'événement existe
     const activity = await Activity.findById(activityId);
     if (!activity) {
       return res.status(404).json({ message: 'Événement non trouvé' });
     }
 
 
-    // Vérifier si l'utilisateur est déjà dans la liste des participants ou de la liste d'attente
-   // const participantIndex = activity.participants.findIndex(participantId => participantId.toString() === userId);
-    //const waitingIndex = activity.waitingList.findIndex(waitingId => waitingId.toString() === userId);
+
     const isUserInWaitingList = activity.waitingList.includes(userId._id);
     const isUserInParticipant = activity.participants.includes(userId._id);
 
-    console.log(isUserInParticipant);
-    console.log(isUserInWaitingList);
+
     
     if (isUserInWaitingList || isUserInParticipant) {
       return res.json({ success: false, error: 'L\'utilisateur est déjà en liste d\'attente pour cet événement' });
 
     }
     
-    // Ajouter l'utilisateur à la liste d'attente de l'événement
     activity.waitingList.push(userId);
     await activity.save();
 
-    // Envoyer une notification à l'organisateur
     const organizerProfile = await Profile.findOne({ user: activity.organizer });
     if (!organizerProfile) {
       return res.status(404).json({ message: 'Profil de l\'organisateur non trouvé' });
@@ -136,14 +106,12 @@ router.put('/:activityId/participate/', verifyToken, async (req, res) => {
     let notification = await Notification.findOne({ recipient: activity.organizer, type: 'participation_request', content: activityId });
 
     if (notification) {
-      // Mettre à jour la date et l'état de la notification existante
       notification.date = new Date();
       notification.vu = false;
       notification.vuByUser = false;
 
       await notification.save();
     } else {
-      // Créer une nouvelle notification
       notification = new Notification({
         recipient: activity.organizer,
         type: 'participation_request',
@@ -168,38 +136,24 @@ router.put('/:activityId/unsubscribe-waitinglist/', verifyToken, async (req, res
     const userId = req.user;
     const io = req.io;
 
-    // Récupérer l'activité
     const activity = await Activity.findById(activityId);
     if (!activity) {
       return res.status(404).json({ message: 'Activité non trouvée' });
     }
 
-    // Vérifier si l'utilisateur est dans la liste d'attente
     const waitingIndex = activity.waitingList.indexOf(userId._id);
     if (waitingIndex === -1) {
       return res.json({ success: false, error: 'L\'utilisateur n\'est pas dans la liste d\'attente de cet événement' });
     }
 
-    // Retirer l'utilisateur de la liste d'attente
     activity.waitingList.splice(waitingIndex, 1);
     await activity.save();
 
-    // Envoyer une notification à l'organisateur
     const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ message: 'Utilisateur non trouvé' });
     }
     const { firstName, lastName } = user;
-    /*const notificationContent = `${lastName} s'est désinscrit de l'attente de "${activity.name}".`;
-    const newNotification = new Notification({
-      recipient: activity.organizer,
-      type: 'waitinglist_unsubscribed',
-      content: notificationContent,
-      date: new Date()
-    });
-    await newNotification.save();*/
-
-    // Recherchez si une notification existante correspondant à la désinscription de cet utilisateur de la liste d'attente de cet événement existe déjà
 let existingNotification = await Notification.findOne({
   recipient: activity.organizer,
   type: 'waitinglist_unsubscribed',
@@ -207,12 +161,10 @@ let existingNotification = await Notification.findOne({
 });
 
 if (existingNotification) {
-  // Si une notification existe, mettez à jour la date de la notification existante
   existingNotification.date = new Date();
   existingNotification.vu = false;
   existingNotification.vuByUser = false;  await existingNotification.save();
 } else {
-  // Sinon, créez une nouvelle notification avec les détails de la désinscription de la liste d'attente
   existingNotification = new Notification({
     recipient: activity.organizer,
     type: 'waitinglist_unsubscribed',
@@ -235,7 +187,6 @@ io.emit('newNotification', existingNotification);
 });
 
 
-// Route pour récupérer toutes les activités
 router.get('/', async (req, res) => {
     try {
       const activities = await Activity.find();
@@ -245,24 +196,20 @@ router.get('/', async (req, res) => {
     }
   });
   
-  // Route pour récupérer une activité par son ID
   router.get('/myevents', verifyToken, async (req, res) => {
     try {
-      const perPage = 10; // Nombre d'événements par page
-      const page = req.query.page || 1; // Numéro de page, par défaut 1
-      const searchTerm = req.query.searchTerm || ''; // Terme de recherche, par défaut vide
+      const perPage = 10; 
+      const page = req.query.page || 1; 
+      const searchTerm = req.query.searchTerm || ''; 
   
-      const query = { organizer: req.user }; // Filtrer par organisateur
+      const query = { organizer: req.user }; 
   
-      // Si un terme de recherche est fourni, ajoutez-le à la requête de recherche
       if (searchTerm) {
-        query.name = { $regex: searchTerm, $options: 'i' }; // Recherche insensible à la casse
+        query.name = { $regex: searchTerm, $options: 'i' }; 
       }
   
-      // Compter le nombre total d'événements correspondant à la requête
       const totalEvents = await Activity.countDocuments(query);
   
-      // Récupérer les événements paginés
       const events = await Activity.find(query)
         .populate({
           path: 'participants',
@@ -315,7 +262,7 @@ router.get('/', async (req, res) => {
         if (req.query.price === 'gratuit') {
           query.price = 0; // Filtrer les activités gratuites
       } else if (req.query.price === 'payant') {
-          query.price = { $gt: 0 }; // Filtrer les activités payantes (prix supérieur à zéro)
+          query.price = { $gt: 0 }; 
       }
       const userProfile = await Profile.findOne({ user: userId }).exec();
 
@@ -394,13 +341,7 @@ router.get('/', async (req, res) => {
                 path: 'participants',
                 select: 'profilePicture',
             })
-            .sort({ date: -1 }); // Trier les activités par date croissante
-
-       /* if (!activities) {
-            return res.status(404).json({ message: 'Aucune activité trouvée' });
-        }
-
-        res.json(activities);*/
+            .sort({ date: -1 }); 
 
         const joinedActivities = activities.filter(activity => {
           return activity.participants.every(participant => !participant.equals(userId));
@@ -442,10 +383,10 @@ router.get('/home/guest', async (req, res) => {
       { $sample: { size: 3 } },
       {
         $lookup: {
-          from: 'users', // Le nom de la collection MongoDB contenant les participants
-          localField: 'participants', // Le champ dans la collection Activity qui contient les participants
-          foreignField: '_id', // Le champ dans la collection User qui est référencé par les participants
-          as: 'participants' // Le nom du champ où seront placées les données peuplées
+          from: 'users', 
+          localField: 'participants', 
+          foreignField: '_id', 
+          as: 'participants'
         }
       },
       {
@@ -463,10 +404,9 @@ router.get('/home/guest', async (req, res) => {
   'category': 1,
   'image' : 1,
   'unsubscribeDeadline':1
-          // Sélectionner uniquement les images de profil des participants
-          // inclure d'autres champs nécessaires ici
+        
         }
-      } // Sélectionner 3 activités au hasard
+      } 
     ]);
 
     res.json(activities);
@@ -602,9 +542,9 @@ router.get('/upComing/guest', async (req, res) => {
     }
     
       if (req.query.price === 'gratuit') {
-        query.price = 0; // Filtrer les activités gratuites
+        query.price = 0; 
     } else if (req.query.price === 'payant') {
-        query.price = { $gt: 0 }; // Filtrer les activités payantes (prix supérieur à zéro)
+        query.price = { $gt: 0 }; 
     }
     
 
@@ -620,11 +560,7 @@ router.get('/upComing/guest', async (req, res) => {
           .skip((page - 1) * perPage)
           .limit(perPage); 
 
-     /* if (!activities) {
-          return res.status(404).json({ message: 'Aucune activité trouvée' });
-      }
-
-      res.json(activities);*/
+ 
       const totalPages = Math.ceil(totalActivities / perPage);
 
   
@@ -642,29 +578,25 @@ router.get('/upComing/guest', async (req, res) => {
 router.get('/joined', verifyToken, async (req, res) => {
   try {
     const userId = req.user._id;
-    const perPage = 10; // Nombre d'activités par page
-    const page = req.query.page || 1; // Numéro de page, par défaut 1
-    const searchTerm = req.query.searchTerm || ''; // Terme de recherche, par défaut vide
+    const perPage = 10; 
+    const page = req.query.page || 1; 
+    const searchTerm = req.query.searchTerm || ''; 
 
-    // Récupérer toutes les activités avec les participants populés
     let activities = await Activity.find().populate({
       path: 'participants',
-      select: 'profilePicture firstName lastName', // Sélectionnez les champs que vous souhaitez récupérer
+      select: 'profilePicture firstName lastName', 
     });
 
-    // Si un terme de recherche est fourni, filtrer les activités correspondantes
     if (searchTerm) {
       activities = activities.filter(activity => {
         return activity.name.toLowerCase().includes(searchTerm.toLowerCase());
       });
     }
 
-    // Filtrer les activités auxquelles l'utilisateur participe
     activities = activities.filter(activity => {
       return activity.participants.some(participant => participant._id.toString() === userId.toString());
     });
 
-    // Pagination
     const totalActivities = activities.length;
     const paginatedActivities = activities.slice((page - 1) * perPage, page * perPage);
 
@@ -697,15 +629,12 @@ router.get('/joined', verifyToken, async (req, res) => {
             return res.status(404).json({ message: 'Activité non trouvée' });
         }
 
-        // Maintenant, nous allons peupler le profil de l'organisateur
         let profile = await Profile.findOne({ user: activity.organizer._id })
             .select('username')
             .exec();
 
-        // Créer une copie de l'activité
         let activityCopy = activity.toObject();
 
-        // Ajouter le profil à l'organisateur dans la copie
         activityCopy.organizer.profile = profile;
 
         res.json(activityCopy);
@@ -735,13 +664,11 @@ router.get('/waitingList/:eventId', verifyToken, async (req, res) => {
   try {
     const { eventId } = req.params;
     const userId =  req.user;
-    // Vérifier si l'événement existe
     const activity = await Activity.findById(eventId);
     if (!activity) {
       return res.status(404).json({ message: 'Événement non trouvé' });
     }
 
-    // Récupérer les utilisateurs dans la liste d'attente avec leurs informations
     const waitingList = await Promise.all(activity.waitingList.map(async userId => {
       const user = await User.findById(userId);
       const profile = await Profile.findOne({ user: userId });
@@ -768,13 +695,11 @@ router.get('/participants/:eventId', verifyToken, async (req, res) => {
     const { eventId } = req.params;
     const userId =  req.user;
 
-    // Vérifier si l'événement existe
     const activity = await Activity.findById(eventId);
     if (!activity) {
       return res.status(404).json({ message: 'Événement non trouvé' });
     }
 
-    // Récupérer les informations sur les participants avec leurs profils
     const participants = await Promise.all(activity.participants.map(async userId => {
       const user = await User.findById(userId);
       const profile = await Profile.findOne({ user: userId });
@@ -813,7 +738,6 @@ router.put('/:id/report', verifyToken, async (req, res) => {
     }
 
 
-       // Vérifiez si l'utilisateur a déjà signalé cette activité
     const hasReported = activity.reported.some(report => report.user.toString() === userId.toString() && report.status === 'N');
     if (hasReported) {
       return res.status(400).json({ error: 'Vous avez déjà signalé cette activité' });
@@ -857,13 +781,11 @@ router.get('/:id/comments', verifyToken, async (req, res) => {
           return res.status(404).json({ message: 'Aucun commentaire trouvé pour cette activité' });
       }*/
 
-      // Maintenant, nous allons peupler le profil de chaque utilisateur
       for (let i = 0; i < comments.length; i++) {
           let profile = await Profile.findOne({ user: comments[i].user._id })
               .select('username')
               .exec();
 
-          // Ajouter le profil à l'utilisateur dans la copie
           comments[i].user.profile = profile;
       }
 
@@ -875,13 +797,11 @@ router.get('/:id/comments', verifyToken, async (req, res) => {
 
 
 
-  // Route pour mettre à jour partiellement une activité
   router.put('/:id', verifyToken, upload.single('file'), async (req, res) => {
     try {
 
       const event = await Activity.findById(req.params.id);
 
-      // Vérifier si l'événement existe
       if (!event) {
           return res.status(404).json({ message: 'Événement non trouvé' });
       }
@@ -893,21 +813,19 @@ router.get('/:id/comments', verifyToken, async (req, res) => {
 console.log('event.organizer.toString()', event.organizer.toString());
 console.log('req.user._id', req.user._id);
 
-      // Vérifier si l'utilisateur authentifié est l'organisateur de l'événement
       if (event.organizer.toString() !== req.user._id.toString()) {
           return res.status(403).json({ message: 'Vous n\'êtes pas autorisé à mettre à jour cet événement' });
       }
 
       const { title, description, startDate, endDate, unsubscribeDeadline, location, repeat, currency, city, category, price, profileType } = req.body;
       const organizer = req.user;
-      //const repeatArray = Object.keys(repeat).filter(key => repeat[key] === 'true');
       const repeatArray = JSON.parse(repeat);
       const Picture = req.file;
    
-      const categoryArray = category[0].split(','); // Divisez la chaîne en un tableau de catégories
+      const categoryArray = category[0].split(','); 
 
       const formattedCategories = categoryArray.map((category, index) => {
-        return category.trim(); // Supprimez les espaces blancs inutiles
+        return category.trim(); 
       });
       
       console.log(formattedCategories);
@@ -922,13 +840,12 @@ console.log('req.user._id', req.user._id);
         repeat: repeatArray,
         currency,
         city,
-        category: formattedCategories, // Assurez-vous de conserver le même format de catégorie
+        category: formattedCategories, 
         price,
         profileType,
       };
-      // Vérifiez si une nouvelle image a été téléchargée
       if (Picture) {
-        updatedActivityData.image = req.file.filename; // Mettez à jour le nom du fichier d'image
+        updatedActivityData.image = req.file.filename; 
       }
       const updatedActivity = await Activity.findByIdAndUpdate(req.params.id, updatedActivityData, { new: true });
       if (!updatedActivity) {
@@ -971,7 +888,6 @@ console.log('req.user._id', req.user._id);
 
 
       if (notification) {
-        // Mettre à jour la notification existante
         notification.date = new Date();
         notification.vu = false;
         notification.vuByUser = false;
@@ -981,7 +897,6 @@ console.log('req.user._id', req.user._id);
 
         await notification.save();
       } else {
-        // Créer une nouvelle notification
         notification = new Notification({
           recipient: userIdAccepet,
           type: 'participation_accepted',
@@ -1024,11 +939,9 @@ console.log('req.user._id', req.user._id);
       const notificationContent = `Votre participation à "${activity.name}" a été annulée.`;
       const notificationIdentifier = `${activity._id}-${notificationContent}`;
       let notification = await Notification.findOne({ recipient: userIdRemove, content: new RegExp(`^${activity._id}-`) });
-      // Envoyer une notification à l'utilisateur
     
 
       if (notification) {
-        // Mettre à jour la notification existante
         notification.date = new Date();
         notification.content= notificationIdentifier;
         notification.type= 'participation_removed';
@@ -1037,7 +950,6 @@ console.log('req.user._id', req.user._id);
         notification.vuByUser = false;
         await notification.save();
       } else {
-        // Créer une nouvelle notification
         notification = new Notification({
           recipient: userIdRemove,
           type: 'participation_removed',
@@ -1062,25 +974,21 @@ console.log('req.user._id', req.user._id);
     const io = req.io;
 
     try {
-      // Construire le nouvel identifiant de notification
       const notificationContent = `Votre participation à "${activity.name}" n'est plus valide.`;
       const notificationIdentifier = `${activity._id}-${notificationContent}`;
   
-      // Rechercher la notification existante par destinataire et contenu
       let notification = await Notification.findOne({
         recipient: participant,
         content: new RegExp(`^${activity._id}-`)
       });
   
       if (notification) {
-        // Mettre à jour les propriétés de la notification
-        notification.date = new Date(); // Mettre à jour la date
-        notification.vu = false; // Marquer comme non vu (facultatif selon votre logique)
-        notification.vuByUser = false; // Marquer comme non vu par l'utilisateur (facultatif selon votre logique)
-        notification.type = 'participation_not_valid'; // Mettre à jour le type de notification
-        notification.content = notificationIdentifier; // Mettre à jour le contenu de la notification
+        notification.date = new Date(); 
+        notification.vu = false; 
+        notification.vuByUser = false; 
+        notification.type = 'participation_not_valid'; 
+        notification.content = notificationIdentifier; 
   
-        // Sauvegarder la notification mise à jour
         await notification.save();
 
         req.io.emit('newNotification', notification);
@@ -1103,17 +1011,13 @@ console.log('req.user._id', req.user._id);
         return res.status(404).json({ message: 'Activité non trouvée' });
       }
   
-      // Vérifier la date de unsubscribeDeadline
       if (new Date(activity.unsubscribeDeadline) > new Date()) {
-        // Si la date est valide, mettre à jour les participants et envoyer une notification
         if (activity.participants.length > 0) {
-          // Créer une notification pour chaque participant
           for (let participant of activity.participants) {
             await updateNotificationForParticipant(activity, participant,req);
           }
         }
   
-        // Mettre à jour l'activité pour la rendre non visible (visibility: false)
         const deletedActivity = await Activity.findByIdAndUpdate(req.params.id, { visibility: false }, { new: true });
   
         if (!deletedActivity) {
@@ -1123,12 +1027,10 @@ console.log('req.user._id', req.user._id);
         activity.participants = [];
         activity.waitingList = [];
   
-        // Enregistrer les changements
         await activity.save();
   
         return res.json({ message: 'Activité supprimée avec succès' });
       } else {
-        // Si la date de unsubscribeDeadline est dépassée, supprimer simplement l'activité sans notification
         const deletedActivity = await Activity.findByIdAndDelete(req.params.id);
   
         if (!deletedActivity) {
@@ -1151,29 +1053,24 @@ router.put('/:activityId/unsubscribe/', verifyToken, async (req, res) => {
   const userId = req.user;
   const io = req.io;
 
-      // Récupérer l'activité
       const activity = await Activity.findById(activityId);
       if (!activity) {
         return res.status(404).json({ message: 'Activité non trouvée' });
       }
   
-      // Vérifier si l'utilisateur est inscrit à l'événement
       const participantIndex = activity.participants.indexOf(userId._id);
       if (participantIndex === -1) {
         return res.status(400).json({ message: 'L\'utilisateur n\'est pas inscrit à cet événement' });
       }
   
-      // Vérifier si la date limite de désinscription est dépassée
       const currentDate = new Date();
       if (currentDate > activity.unsubscribeDeadline) {
         return res.status(400).json({ message: 'La date limite de désinscription est dépassée' });
       }
   
-      // Retirer l'utilisateur de la liste des participants
       activity.participants.splice(participantIndex, 1);
       await activity.save();
   
-  // Envoyer une notification à l'organisateur
   const user = await User.findById(userId);
   if (!user) {
     return res.status(404).json({ message: 'Utilisateur non trouvé' });
@@ -1188,7 +1085,6 @@ router.put('/:activityId/unsubscribe/', verifyToken, async (req, res) => {
   });
   await newNotification.save();*/
 
-// Recherchez si une notification existante correspondant à la désinscription de ce participant de cet événement existe déjà
 let existingNotification = await Notification.findOne({
   recipient: activity.organizer,
   type: 'participant_unsubscribed',
@@ -1196,13 +1092,11 @@ let existingNotification = await Notification.findOne({
 });
 
 if (existingNotification) {
-  // Si une notification existe, mettez à jour la date de la notification existante
   existingNotification.date = new Date();
   existingNotification.vu = false;
   existingNotification.vuByUser = false;
   await existingNotification.save();
 } else {
-  // Sinon, créez une nouvelle notification avec les détails de la désinscription
   existingNotification = new Notification({
     recipient: activity.organizer,
     type: 'participant_unsubscribed',

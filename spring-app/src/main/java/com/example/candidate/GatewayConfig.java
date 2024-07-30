@@ -14,7 +14,7 @@ public class GatewayConfig {
                 .route("react-to-spring-route", r -> r.path("/api/**")
                         .filters(f -> f.filter(authorizationFilter)
                                 .rewritePath("/api/(?<remaining>.*)", "/${remaining}"))
-                        .uri("http://localhost:5000")) // Rediriger vers Express.js
+                        .uri("http://localhost:5000")) 
                 .build();
     }
 }

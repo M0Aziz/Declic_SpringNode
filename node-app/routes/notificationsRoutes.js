@@ -8,13 +8,10 @@ router.get('/', verifyToken, async (req, res) => {
   try {
     const id = req.user;
 
-    // Récupérer les notifications non vues pour l'utilisateur actuel
     const unseenNotificationsCount = await Notification.countDocuments({ recipient: id, vu: false });
 
-    // Récupérer toutes les notifications pour d'autres utilisateurs, triées par ordre décroissant de la date
     const notifications = await Notification.find({ recipient: id  }).sort({ date: -1 });
 
-    // Renvoyer les notifications et le nombre de notifications non vues
     res.json({ notifications, unseenNotificationsCount });
   } catch (error) {
     res.status(500).json({ message: 'Erreur lors de la récupération des notifications.' });
